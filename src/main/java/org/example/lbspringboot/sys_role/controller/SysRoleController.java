@@ -6,13 +6,17 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.example.lbspringboot.sys_role.entity.SelectItem;
 import org.example.lbspringboot.sys_role.entity.SysRolePage;
 import org.example.lbspringboot.sys_role.entity.SysRole;
 import org.example.lbspringboot.sys_role.service.SysRoleService;
 import org.example.lbspringboot.utils.Result;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * @author zyr
@@ -80,4 +84,20 @@ public class SysRoleController {
         return Result.success("查询成功", list);
     }
 
+    //角色下拉数据列表
+    @GetMapping("/selectList")
+    public Result selectList(){
+        List<SysRole> list = sysRoleService.list();
+        //返回的值
+        List<SelectItem> selectItems = new ArrayList<>();
+        Optional.ofNullable(list).orElse((new ArrayList<>()))
+                .forEach(item->{
+                    SelectItem si = new SelectItem();
+                    si.setCheck(false);
+                    si.setLabel(item.getRoleName());
+                    si.setValue(item.getRoleId());
+                    selectItems.add(si);
+                });
+        return Result.success("查询成功",selectItems);
+    }
 }
