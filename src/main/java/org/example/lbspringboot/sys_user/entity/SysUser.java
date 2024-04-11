@@ -1,6 +1,7 @@
 package org.example.lbspringboot.sys_user.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -23,6 +24,9 @@ public class SysUser {
     private String email;
     private String sex;
     private String isAdmin;
+    //不属于用户表，需要排除
+    @TableField(exist = false)
+    private String roleId;
     //账户过期 1 未过期 0 过期
     private boolean isAccountNonExpired=true;
     //账户锁定 1 未锁定 0 锁定

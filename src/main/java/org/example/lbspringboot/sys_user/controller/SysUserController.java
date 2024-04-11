@@ -25,36 +25,30 @@ public class SysUserController {
     @Resource
     private SysUserService sysUserService;
 
-    //新增
+    // 新增
     @PostMapping
-    public Result add(@RequestBody SysUser sysUser){
+    public Result add(@RequestBody SysUser sysUser) {
         sysUser.setCreateTime(new Date());
-        if(sysUserService.save(sysUser)){
-            return Result.success("新增成功");
-        }else{
-            return Result.error("新增失败");
-        }
+        sysUserService.saveUser(sysUser);
+        return Result.success("新增成功");
+
     }
 
-    //编辑
+    // 编辑
     @PutMapping
-    public Result edit(@RequestBody SysUser sysUser){
+    public Result edit(@RequestBody SysUser sysUser) {
         sysUser.setUpdateTime(new Date());
-        if(sysUserService.updateById(sysUser)){
-            return Result.success("编辑成功");
-        }else{
-            return Result.error("编辑失败");
-        }
+        sysUserService.editUser(sysUser);
+        return Result.success("编辑成功");
+
     }
 
-    //删除
+
+    // 删除
     @DeleteMapping("/{userId}")
-    public Result delete(@PathVariable("userId") Long userId){
-        if(sysUserService.removeById(userId)){
-            return Result.success("删除成功");
-        }else{
-            return Result.error("删除失败");
-        }
+    public Result delete(@PathVariable("userId") Long userId) {
+        sysUserService.deleteUser(userId);
+        return Result.success("删除成功");
     }
 
 
@@ -74,8 +68,8 @@ public class SysUserController {
         if (StringUtils.isNotEmpty((param.getNickName()))) {
             query.lambda().like(SysUser::getUsername, param.getNickName());
         }
-        //根据电话查询
-        if(StringUtils.isNotEmpty(param.getPhone())){
+        // 根据电话查询
+        if (StringUtils.isNotEmpty(param.getPhone())) {
             query.lambda().like(SysUser::getPhone, param.getPhone());
         }
         // 根据创建时间进行降序排序
