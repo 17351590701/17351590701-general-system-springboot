@@ -1,4 +1,3 @@
-#\u8BBE\u7F6E\u542F\u7528\u7684\u73AF\u5883
 spring:
   profiles:
     active: dev
@@ -20,18 +19,15 @@ spring:
   main:
     banner-mode: off
 
-#mybatis plus\u914D\u7F6E
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  #configuration:
+    #log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
-      #\u914D\u7F6Emybatis plus \u5728\u66F4\u65B0\u65F6\u53EA\u5728\u66F4\u65B0\u975E\u7A7A\u548C\u975ENULL\u7684\u5B57\u6BB5
       update-strategy: not_empty
     banner: false
 ---
-#\u4E0A\u7EBF\u73AF\u5883
 server:
   port: 81
 spring:
