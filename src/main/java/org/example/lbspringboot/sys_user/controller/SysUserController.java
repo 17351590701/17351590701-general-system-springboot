@@ -9,10 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.lbspringboot.sys_user.entity.SysUser;
 import org.example.lbspringboot.sys_user.entity.SysUserPage;
 import org.example.lbspringboot.sys_user.service.SysUserService;
+import org.example.lbspringboot.sys_user_role.entity.SysUserRole;
+import org.example.lbspringboot.sys_user_role.service.SysUserRoleService;
 import org.example.lbspringboot.utils.Result;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * @author zyr
@@ -26,6 +31,9 @@ import java.util.Date;
 public class SysUserController {
     @Resource
     private SysUserService sysUserService;
+    @Resource
+    private SysUserRoleService sysUserRoleService;
+
     // 新增
     @PostMapping
     public Result add(@RequestBody SysUser sysUser) {
@@ -80,4 +88,20 @@ public class SysUserController {
     }
 
 
+    // 根据用户id在userRole表中查询用户持有的角色列表。
+    @GetMapping("/getRoleList")
+    public Result getRoleList(Long userId) {
+        QueryWrapper<SysUserRole> query = new QueryWrapper<>();
+        query.lambda().eq(SysUserRole::getUserId, userId);
+        // 查询，满足条件的userRole表至list中
+        List<SysUserRole> list = sysUserRoleService.list(query);
+        //角色id集合
+        List<Long> roleList = new ArrayList<>();
+        //判断查询结果是否为空，否则遍历查询结果添加到roleList中
+        Optional.ofNullable(list).orElse(new ArrayList<>())
+                .forEach(item -> {
+                    roleList.add(item.getRoleId());
+                });
+        return Result.success("查询成功", roleList);
+    }
 }
