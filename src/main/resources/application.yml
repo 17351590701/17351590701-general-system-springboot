@@ -16,17 +16,9 @@ spring:
   config:
     activate:
       on-profile: dev
-  main:
-    banner-mode: off
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml
-  #configuration:
-    #log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      update-strategy: not_empty
-    banner: false
 ---
 server:
   port: 81

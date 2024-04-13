@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.example.lbspringboot.sys_user.entity.SysUser;
 import org.example.lbspringboot.sys_user.entity.SysUserPage;
 import org.example.lbspringboot.sys_user.service.SysUserService;
@@ -20,18 +21,18 @@ import java.util.Date;
  */
 @RestController
 @CrossOrigin
+@Slf4j
 @RequestMapping("/api/sysUser")
 public class SysUserController {
     @Resource
     private SysUserService sysUserService;
-
     // 新增
     @PostMapping
     public Result add(@RequestBody SysUser sysUser) {
+        log.info("新增用户{}", sysUser);
         sysUser.setCreateTime(new Date());
         sysUserService.saveUser(sysUser);
         return Result.success("新增成功");
-
     }
 
     // 编辑
@@ -66,7 +67,7 @@ public class SysUserController {
         QueryWrapper<SysUser> query = new QueryWrapper<>();
         // 如果parm中的角色名不为空，则将角色名作为查询条件，使用like操作符进行模糊查询
         if (StringUtils.isNotEmpty((param.getNickName()))) {
-            query.lambda().like(SysUser::getUsername, param.getNickName());
+            query.lambda().like(SysUser::getNickName, param.getNickName());
         }
         // 根据电话查询
         if (StringUtils.isNotEmpty(param.getPhone())) {
