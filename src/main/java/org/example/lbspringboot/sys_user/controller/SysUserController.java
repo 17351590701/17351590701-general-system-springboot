@@ -1,6 +1,7 @@
 package org.example.lbspringboot.sys_user.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.micrometer.common.util.StringUtils;
@@ -103,5 +104,19 @@ public class SysUserController {
                     roleList.add(item.getRoleId());
                 });
         return Result.success("查询成功", roleList);
+    }
+
+    //重置密码
+    @PostMapping("/resetPassword")
+    public Result resetPassword(@RequestBody SysUser sysUser){
+        log.info("重置密码{}",sysUser);
+        UpdateWrapper<SysUser> query = new UpdateWrapper<>();
+        //重置密码：666666
+        query.lambda().eq(SysUser::getUserId,sysUser.getUserId())
+                .set(SysUser::getPassword,"666666");
+        if(sysUserService.update(query)){
+            return Result.success("密码重置成功");
+        }
+        return Result.error("密码重置失败");
     }
 }
