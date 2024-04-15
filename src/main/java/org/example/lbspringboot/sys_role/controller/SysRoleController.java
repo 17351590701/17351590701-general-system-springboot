@@ -23,10 +23,10 @@ import java.util.Optional;
  * @date 2024/4/8 下午10:18
  * @Description
  */
-@RequestMapping("/api/role")
-@RestController
-@CrossOrigin
 @Slf4j
+@CrossOrigin
+@RestController
+@RequestMapping("/api/role")
 public class SysRoleController {
     @Resource
     public SysRoleService sysRoleService;

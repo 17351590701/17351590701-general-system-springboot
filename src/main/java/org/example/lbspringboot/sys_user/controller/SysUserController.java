@@ -25,9 +25,9 @@ import java.util.Optional;
  * @date 2024/4/11 下午5:04
  * @Description
  */
-@RestController
-@CrossOrigin
 @Slf4j
+@CrossOrigin
+@RestController
 @RequestMapping("/api/sysUser")
 public class SysUserController {
     @Resource
