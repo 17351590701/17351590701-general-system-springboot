@@ -4,9 +4,16 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.code.kaptcha.impl.DefaultKaptcha;
 import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
+
+import javax.imageio.ImageIO;
+import jakarta.servlet.http.HttpServletRequest;
+
 import lombok.extern.slf4j.Slf4j;
+import org.example.lbspringboot.sys_user.entity.LoginParam;
+import org.example.lbspringboot.sys_user.entity.LoginVo;
 import org.example.lbspringboot.sys_user.entity.SysUser;
 import org.example.lbspringboot.sys_user.entity.SysUserPage;
 import org.example.lbspringboot.sys_user.service.SysUserService;
@@ -15,10 +22,11 @@ import org.example.lbspringboot.sys_user_role.service.SysUserRoleService;
 import org.example.lbspringboot.utils.Result;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import jakarta.servlet.http.HttpSession;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @author zyr
@@ -34,6 +42,8 @@ public class SysUserController {
     private SysUserService sysUserService;
     @Resource
     private SysUserRoleService sysUserRoleService;
+    @Resource
+    private DefaultKaptcha defaultKaptcha;
 
     // 新增
     @PostMapping
@@ -96,9 +106,9 @@ public class SysUserController {
         query.lambda().eq(SysUserRole::getUserId, userId);
         // 查询，满足条件的userRole表至list中
         List<SysUserRole> list = sysUserRoleService.list(query);
-        //角色id集合
+        // 角色id集合
         List<Long> roleList = new ArrayList<>();
-        //判断查询结果是否为空，否则遍历查询结果添加到roleList中
+        // 判断查询结果是否为空，否则遍历查询结果添加到roleList中
         Optional.ofNullable(list).orElse(new ArrayList<>())
                 .forEach(item -> {
                     roleList.add(item.getRoleId());
@@ -106,17 +116,79 @@ public class SysUserController {
         return Result.success("查询成功", roleList);
     }
 
-    //重置密码
+    // 重置密码
     @PostMapping("/resetPassword")
-    public Result resetPassword(@RequestBody SysUser sysUser){
-        log.info("重置密码{}",sysUser);
+    public Result resetPassword(@RequestBody SysUser sysUser) {
+        log.info("重置密码{}", sysUser);
         UpdateWrapper<SysUser> query = new UpdateWrapper<>();
-        //重置密码：666666
-        query.lambda().eq(SysUser::getUserId,sysUser.getUserId())
-                .set(SysUser::getPassword,"666666");
-        if(sysUserService.update(query)){
+        // 重置密码：666666
+        query.lambda().eq(SysUser::getUserId, sysUser.getUserId())
+                .set(SysUser::getPassword, "666666");
+        if (sysUserService.update(query)) {
             return Result.success("密码重置成功");
         }
         return Result.error("密码重置失败");
+    }
+
+    // 图片验证码
+    @PostMapping("/getImage")
+    public Result imageCode(HttpServletRequest request) {
+        // 获取session
+        HttpSession session = request.getSession();
+        // 生成验证码
+        String text = defaultKaptcha.createText();
+        // 存放到session
+        session.setAttribute("code", text);
+        // 生成图片，转换成base64
+        BufferedImage bufferedImage = defaultKaptcha.createImage(text);
+        ByteArrayOutputStream outputStream = null;
+        try {
+            outputStream = new ByteArrayOutputStream();
+            ImageIO.write(bufferedImage, "jpg", outputStream);
+            // 转换成base64
+            byte[] bytes = outputStream.toByteArray();
+            String captchaBase64 = Base64.getEncoder().encodeToString(bytes);
+            return new Result(200,"生成成功",captchaBase64);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            try {
+                if(outputStream!=null){
+                    outputStream.close();
+                }
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    //登录
+    @PostMapping("/login")
+    public Result login( HttpServletRequest request,@RequestBody LoginParam param) {
+        //获取前端code
+        String code=param.getCode();
+        //获取session中生成的code
+        HttpSession session = request.getSession();
+        String imageCode = (String) session.getAttribute("code");
+        if(StringUtils.isEmpty(imageCode)){
+            return Result.error("验证码过期");
+        }
+        //判断两个验证码是否相等
+        if (imageCode.equals(code)) {
+            return Result.error("验证码错误");
+        }
+        //查询用户信息
+        QueryWrapper<SysUser> query = new QueryWrapper<>();
+        query.lambda().eq(SysUser::getUsername, param.getUsername());
+        SysUser one = sysUserService.getOne(query);
+        if(one==null){
+            return Result.error("用户不存在");
+        }
+        //返回用户的信息和token
+        LoginVo vo = new LoginVo();
+        vo.setUserId(one.getUserId());
+        vo.setNickName(one.getNickName());
+        return Result.success("登录成功", vo);
     }
 }
