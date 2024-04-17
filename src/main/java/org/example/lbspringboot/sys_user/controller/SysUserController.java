@@ -1,16 +1,17 @@
 package org.example.lbspringboot.sys_user.controller;
 
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.google.code.kaptcha.impl.DefaultKaptcha;
+
+import com.google.code.kaptcha.Producer;
 import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
 
-import javax.imageio.ImageIO;
-import jakarta.servlet.http.HttpServletRequest;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.example.lbspringboot.sys_user.entity.LoginParam;
 import org.example.lbspringboot.sys_user.entity.LoginVo;
@@ -23,10 +24,13 @@ import org.example.lbspringboot.utils.Result;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
+
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 
 /**
  * @author zyr
@@ -43,7 +47,7 @@ public class SysUserController {
     @Resource
     private SysUserRoleService sysUserRoleService;
     @Resource
-    private DefaultKaptcha defaultKaptcha;
+    private Producer captchaProducer;
 
     // 新增
     @PostMapping
@@ -130,62 +134,59 @@ public class SysUserController {
         return Result.error("密码重置失败");
     }
 
-    // 图片验证码
+    /**
+     * 生成并返回图形验证码的Base64编码字符串。
+     * 该方法不接受任何参数，返回一个包含验证码文本和其Base64编码图像的结果对象。
+     *
+     * @return Result 包含验证码文本和其Base64编码图像的结果对象
+     * @throws IOException 如果图像写入过程中发生IO异常
+     */
     @PostMapping("/getImage")
-    public Result imageCode(HttpServletRequest request) {
-        // 获取session
+    public Result imageCodeBase64(HttpServletRequest request) throws IOException {
+        // 生成验证码文本
+        String capText = captchaProducer.createText();
+        log.info("验证码：{}", capText);
+        //将验证码文本保存到session中
         HttpSession session = request.getSession();
-        // 生成验证码
-        String text = defaultKaptcha.createText();
-        // 存放到session
-        session.setAttribute("code", text);
-        // 生成图片，转换成base64
-        BufferedImage bufferedImage = defaultKaptcha.createImage(text);
-        ByteArrayOutputStream outputStream = null;
-        try {
-            outputStream = new ByteArrayOutputStream();
-            ImageIO.write(bufferedImage, "jpg", outputStream);
-            // 转换成base64
-            byte[] bytes = outputStream.toByteArray();
-            String captchaBase64 = Base64.getEncoder().encodeToString(bytes);
-            return new Result(200,"生成成功",captchaBase64);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }finally {
-            try {
-                if(outputStream!=null){
-                    outputStream.close();
-                }
-            }catch(IOException e){
-                e.printStackTrace();
-            }
-        }
-        return null;
+        session.setAttribute("code",capText);
+        // 根据验证码文本生成对应的图像
+        BufferedImage bi = captchaProducer.createImage(capText);
+        //初始化字节数组输出流
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        // 将图像以JPEG格式写入到字节数组输出流
+        ImageIO.write(bi, "jpeg", byteArrayOutputStream);
+        // 将字节数组输出流中的图像数据转换为字节数组
+        byte[] imageData = byteArrayOutputStream.toByteArray();
+        // 将图像数据字节数组编码为Base64字符串
+        String base64Image = Base64.getEncoder().encodeToString(imageData);
+        // 返回包含验证码文本和Base64编码图像的结果
+        return Result.success("获取验证码成功",base64Image);
     }
 
-    //登录
+
+    // 登录
     @PostMapping("/login")
-    public Result login( HttpServletRequest request,@RequestBody LoginParam param) {
-        //获取前端code
-        String code=param.getCode();
-        //获取session中生成的code
+    public Result login(HttpServletRequest request, @RequestBody LoginParam param) {
+        // 获取前端code
+        String code = param.getCode();
+        // 获取session中生成的code
         HttpSession session = request.getSession();
-        String imageCode = (String) session.getAttribute("code");
-        if(StringUtils.isEmpty(imageCode)){
+        String capText = (String) session.getAttribute("code");
+        if (StringUtils.isEmpty(capText)) {
             return Result.error("验证码过期");
         }
-        //判断两个验证码是否相等
-        if (imageCode.equals(code)) {
+        // 判断两个验证码是否相等
+        if (capText.equals(code)) {
             return Result.error("验证码错误");
         }
-        //查询用户信息
+        // 查询用户信息
         QueryWrapper<SysUser> query = new QueryWrapper<>();
         query.lambda().eq(SysUser::getUsername, param.getUsername());
         SysUser one = sysUserService.getOne(query);
-        if(one==null){
+        if (one == null) {
             return Result.error("用户不存在");
         }
-        //返回用户的信息和token
+        // 返回用户的信息和token
         LoginVo vo = new LoginVo();
         vo.setUserId(one.getUserId());
         vo.setNickName(one.getNickName());
