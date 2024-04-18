@@ -8,28 +8,23 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
-import com.google.code.kaptcha.Producer;
 import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
 
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.example.lbspringboot.sys_menu.entity.AssignTreeParam;
 import org.example.lbspringboot.sys_menu.entity.AssignTreeVo;
-import org.example.lbspringboot.sys_user.entity.LoginParam;
-import org.example.lbspringboot.sys_user.entity.LoginVo;
-import org.example.lbspringboot.sys_user.entity.SysUser;
-import org.example.lbspringboot.sys_user.entity.SysUserPage;
+import org.example.lbspringboot.sys_user.entity.*;
 import org.example.lbspringboot.sys_user.service.SysUserService;
 import org.example.lbspringboot.sys_user_role.entity.SysUserRole;
 import org.example.lbspringboot.sys_user_role.service.SysUserRoleService;
+import org.example.lbspringboot.utils.JwtUtils;
 import org.example.lbspringboot.utils.Result;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.util.*;
@@ -52,7 +47,8 @@ public class SysUserController {
     private SysUserRoleService sysUserRoleService;
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
-
+    @Resource
+    private JwtUtils jwtUtils;
     // 新增
     @PostMapping
     public Result add(@RequestBody SysUser sysUser) {
@@ -153,11 +149,11 @@ public class SysUserController {
         response.setHeader("Pragma", "No-cache");
 
         // 创建一个图形验证码，指定其长度、宽度、字符数和干扰线宽度
-        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(300, 100, 4, 5);
+        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(300, 100, 4, 4);
         String capText = captcha.getCode();
 
-        //redis设置 60s key 过期
-        redisTemplate.opsForValue().set("capText",capText,60, TimeUnit.SECONDS);
+        // redis设置 60s key 过期
+        redisTemplate.opsForValue().set("capText", capText, 60, TimeUnit.SECONDS);
         log.info("验证码：{}", capText);
 
         captcha.write(response.getOutputStream());
@@ -173,11 +169,11 @@ public class SysUserController {
         // 获取前端输入的code
         String Ucode = param.getCode();
         // 获取redis中的key
-        String capText = (String)redisTemplate.boundValueOps("capText").get();
+        String capText = (String) redisTemplate.boundValueOps("capText").get();
         if (StringUtils.isEmpty(capText)) {
             return Result.error("验证码过期");
         }
-        if(capText.equalsIgnoreCase(Ucode)){
+        if (capText.equalsIgnoreCase(Ucode)) {
             // 查询用户信息
             QueryWrapper<SysUser> query = new QueryWrapper<>();
             query.lambda().eq(SysUser::getUsername, param.getUsername());
@@ -189,8 +185,13 @@ public class SysUserController {
             LoginVo vo = new LoginVo();
             vo.setUserId(one.getUserId());
             vo.setNickName(one.getNickName());
+            //生成token
+            Map<String,String> map= new HashMap<>();
+            map.put("userId",Long.toString(one.getUserId()));
+            String token = jwtUtils.generateToken(map);
+            vo.setToken(token);
             return Result.success("登录成功", vo);
-        }else {
+        } else {
             return Result.error("验证码错误");
         }
     }
@@ -201,5 +202,23 @@ public class SysUserController {
     public Result getAssingTree(AssignTreeParam param) {
         AssignTreeVo assignTree = sysUserService.getAssignTree(param);
         return Result.success("查询成功", assignTree);
+    }
+
+    // 修改密码
+    @PutMapping("/updatePassword")
+    public Result updatePassword(@RequestBody UpdatePasswordParam param) {
+        SysUser user = sysUserService.getById(param.getUserId());
+        if (!param.getOldPassword().equals(user.getPassword())) {
+            return Result.error("原密码错误");
+        }
+        UpdateWrapper<SysUser> query = new UpdateWrapper<>();
+        query.lambda().set(SysUser::getPassword, param.getNewPassword())
+                .eq(SysUser::getUserId, param.getUserId());
+        if (sysUserService.update(query)) {
+            return Result.success("修改成功");
+        } else {
+            return Result.error("修改失败");
+        }
+
     }
 }

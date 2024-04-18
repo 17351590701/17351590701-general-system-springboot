@@ -22,11 +22,17 @@ spring:
       host: 127.0.0.1
       port: 6379
       database: 1
-
+### mybatis-plus配置
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml
 #  configuration:
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+### jwt配置
+jwt:
+  issuer: zyr
+  secret: zyr030426
+  expiration: 30
+
 ---
 server:
   port: 81
