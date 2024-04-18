@@ -1,15 +1,23 @@
 package org.example.lbspringboot.sys_menu.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import io.netty.util.internal.StringUtil;
+import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeParam;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeVo;
 import org.example.lbspringboot.sys_menu.entity.MakeMenuTree;
 import org.example.lbspringboot.sys_menu.entity.SysMenu;
 import org.example.lbspringboot.sys_menu.mapper.SysMenuMapper;
 import org.example.lbspringboot.sys_menu.service.SysMenuService;
+import org.example.lbspringboot.sys_user.entity.SysUser;
+import org.example.lbspringboot.sys_user.mapper.SysUserMapper;
+import org.example.lbspringboot.sys_user.service.Impl.SysUserServiceImpl;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author zyr
@@ -17,7 +25,10 @@ import java.util.List;
  * @Description
  */
 @Service
+@Slf4j
 public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> implements SysMenuService {
+    @Resource
+    private SysMenuMapper sysMenuMapper;
     /**
      * 获取所有父级菜单
      * 该方法不接受任何参数，返回一个菜单树，其中包含所有父级（顶级）菜单。
@@ -28,13 +39,13 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
     @Override
     public List<SysMenu> getParent() {
         // 初始化查询类型数组并转换为列表
-        String[] type = {"0","1"};
-        //返回固定大小的集合列表,不可增删，但可set修改
+        String[] type = {"0", "1"};
+        // 返回固定大小的集合列表,不可增删，但可set修改
         List<String> strings = Arrays.asList(type);
 
         // 构建查询条件，查询类型为0或1的菜单项
         QueryWrapper<SysMenu> query = new QueryWrapper<>();
-        query.lambda().in(SysMenu::getType,strings);
+        query.lambda().in(SysMenu::getType, strings);
 
         // 执行查询，并获取结果列表
         List<SysMenu> menuList = this.baseMapper.selectList(query);
@@ -44,14 +55,28 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
         menu.setTitle("顶级菜单");
         menu.setLabel("顶级菜单");
         menu.setParentId(-1L);
-        //Id为0L，故顶级菜单
+        // Id为0L，故顶级菜单
         menu.setMenuId(0L);
         menu.setValue(0L);
-        //将构建的父级菜单也添加到集合中
+        // 将构建的父级菜单也添加到集合中
         menuList.add(menu);
 
         // 组装菜单树（顶级树），构建的
         return MakeMenuTree.makeTree(menuList, -1L);
     }
+
+    // userId获取用户菜单
+    @Override
+    public List<SysMenu> getMenuByUserId(Long userId) {
+        return sysMenuMapper.getMenuByUserId(userId);
+    }
+
+    // roleId获取角色菜单
+    //roleId获取错误
+    @Override
+    public List<SysMenu> getMenuByRoleId(Long roleId) {
+        return sysMenuMapper.getMenuByRoleId(roleId);
+    }
+
 
 }

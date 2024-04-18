@@ -16,6 +16,8 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeParam;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeVo;
 import org.example.lbspringboot.sys_user.entity.LoginParam;
 import org.example.lbspringboot.sys_user.entity.LoginVo;
 import org.example.lbspringboot.sys_user.entity.SysUser;
@@ -48,8 +50,6 @@ public class SysUserController {
     private SysUserService sysUserService;
     @Resource
     private SysUserRoleService sysUserRoleService;
-    @Resource
-    private Producer captchaProducer;
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
@@ -153,7 +153,7 @@ public class SysUserController {
         response.setHeader("Pragma", "No-cache");
 
         // 创建一个图形验证码，指定其长度、宽度、字符数和干扰线宽度
-        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(200, 100, 4, 4);
+        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(300, 100, 4, 5);
         String capText = captcha.getCode();
 
         //redis设置 60s key 过期
@@ -172,26 +172,34 @@ public class SysUserController {
     public Result login(@RequestBody LoginParam param) {
         // 获取前端输入的code
         String Ucode = param.getCode();
-        // 获取session中生成的code
+        // 获取redis中的key
         String capText = (String)redisTemplate.boundValueOps("capText").get();
         if (StringUtils.isEmpty(capText)) {
             return Result.error("验证码过期");
         }
-        // 判断两个验证码是否相等
-        if (!capText.equals(Ucode)) {
+        if(capText.equalsIgnoreCase(Ucode)){
+            // 查询用户信息
+            QueryWrapper<SysUser> query = new QueryWrapper<>();
+            query.lambda().eq(SysUser::getUsername, param.getUsername());
+            SysUser one = sysUserService.getOne(query);
+            if (one == null) {
+                return Result.error("用户不存在");
+            }
+            // 返回用户的信息和token
+            LoginVo vo = new LoginVo();
+            vo.setUserId(one.getUserId());
+            vo.setNickName(one.getNickName());
+            return Result.success("登录成功", vo);
+        }else {
             return Result.error("验证码错误");
         }
-        // 查询用户信息
-        QueryWrapper<SysUser> query = new QueryWrapper<>();
-        query.lambda().eq(SysUser::getUsername, param.getUsername());
-        SysUser one = sysUserService.getOne(query);
-        if (one == null) {
-            return Result.error("用户不存在");
-        }
-        // 返回用户的信息和token
-        LoginVo vo = new LoginVo();
-        vo.setUserId(one.getUserId());
-        vo.setNickName(one.getNickName());
-        return Result.success("登录成功", vo);
+    }
+
+
+    // 查询根据roleId查询菜单树
+    @GetMapping("/getAssingTree")
+    public Result getAssingTree(AssignTreeParam param) {
+        AssignTreeVo assignTree = sysUserService.getAssignTree(param);
+        return Result.success("查询成功", assignTree);
     }
 }

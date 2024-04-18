@@ -1,18 +1,28 @@
 package org.example.lbspringboot.sys_user.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeParam;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeVo;
+import org.example.lbspringboot.sys_menu.entity.MakeMenuTree;
+import org.example.lbspringboot.sys_menu.entity.SysMenu;
+import org.example.lbspringboot.sys_menu.service.Impl.SysMenuServiceImpl;
 import org.example.lbspringboot.sys_user.entity.SysUser;
 import org.example.lbspringboot.sys_user.mapper.SysUserMapper;
 import org.example.lbspringboot.sys_user.service.SysUserService;
 import org.example.lbspringboot.sys_user_role.entity.SysUserRole;
 import org.example.lbspringboot.sys_user_role.service.SysUserRoleService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author zyr
@@ -20,9 +30,13 @@ import java.util.List;
  * @Description
  */
 @Service
+@Slf4j
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
     @Resource
     private SysUserRoleService sysUserRoleService;
+
+    @Resource
+    private SysMenuServiceImpl sysMenuService;
 
     /**
      * 保存用户信息，如果用户角色ID存在，则同时保存用户角色关系。
@@ -86,6 +100,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             sysUserRoleService.remove(query);
         }
     }
+
+
     /**
      * 插入用户角色关系。
      * 该方法用于将一个用户与多个角色建立关系，通过解析角色ID字符串数组来实现。
@@ -107,5 +123,45 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             // 批量保存用户角色关系到数据库。
             sysUserRoleService.saveBatch(roles);
         }
+    }
+
+
+    /**
+     * 获取分配树结构的数据
+     * @param param 包含用户ID和角色ID的参数对象
+     * @return 返回一个AssignTreeVo对象，其中包含用户可以访问的菜单列表和已选中的菜单ID列表
+     */
+    @Override
+    public AssignTreeVo getAssignTree(AssignTreeParam param) {
+        // 根据用户ID查询用户信息
+        SysUser user = this.baseMapper.selectById(param.getUserId());
+        List<SysMenu> menuList = null;
+
+        // 判断用户是否为超级管理员
+        if (StringUtils.isNotEmpty(user.getIsAdmin()) && "1".equals(user.getIsAdmin())) {
+            // 如果是超级管理员，则查询所有菜单
+            menuList = sysMenuService.list();
+        } else {
+            // 如果不是超级管理员，根据用户ID查询可访问的菜单
+            menuList = sysMenuService.getMenuByUserId(param.getUserId());
+        }
+        //组装菜单树
+        List<SysMenu> makeTree = MakeMenuTree.makeTree(menuList, 0L);
+        // 根据角色ID查询角色对应的菜单
+        List<SysMenu> roleMenu =sysMenuService.getMenuByRoleId(param.getRoleId());
+
+        List<Long> ids  =new ArrayList<>();
+
+        // 过滤并收集角色对应的菜单ID
+        Optional.ofNullable(roleMenu).orElse(new ArrayList<>())
+                .stream()
+                .filter(Objects::nonNull)//确保item项不为空
+                .forEach(item->ids.add(item.getMenuId()));
+
+        // 组装并返回数据
+        AssignTreeVo vo = new AssignTreeVo();
+        vo.setCheckList(ids.toArray());
+        vo.setMenuList(makeTree);
+        return vo;
     }
 }

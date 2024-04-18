@@ -1,6 +1,8 @@
 package org.example.lbspringboot.sys_user.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeParam;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeVo;
 import org.example.lbspringboot.sys_user.entity.SysUser;
 
 /**
@@ -15,4 +17,6 @@ public interface SysUserService extends IService<SysUser> {
     void editUser(SysUser sysUser);
     //删除
     void deleteUser(Long userId);
+    //查询菜单树
+    AssignTreeVo getAssignTree(AssignTreeParam param);
 }

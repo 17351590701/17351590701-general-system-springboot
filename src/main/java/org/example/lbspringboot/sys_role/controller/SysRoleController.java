@@ -10,6 +10,8 @@ import org.example.lbspringboot.sys_role.entity.SelectItem;
 import org.example.lbspringboot.sys_role.entity.SysRolePage;
 import org.example.lbspringboot.sys_role.entity.SysRole;
 import org.example.lbspringboot.sys_role.service.SysRoleService;
+import org.example.lbspringboot.sys_role_menu.entity.SaveMenuParam;
+import org.example.lbspringboot.sys_role_menu.service.Impl.SysRoleMenuServiceImpl;
 import org.example.lbspringboot.utils.Result;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +31,10 @@ import java.util.Optional;
 @RequestMapping("/api/role")
 public class SysRoleController {
     @Resource
-    public SysRoleService sysRoleService;
+    private SysRoleService sysRoleService;
 
+    @Resource
+    private SysRoleMenuServiceImpl sysRoleMenuService;
 
     // 新增
     @PostMapping
@@ -99,5 +103,12 @@ public class SysRoleController {
                     selectItems.add(si);
                 });
         return Result.success("查询成功",selectItems);
+    }
+
+    //保存角色菜单
+    @PostMapping("/saveRoleMenu")
+    public Result saveRoleMenu(@RequestBody SaveMenuParam param){
+        sysRoleMenuService.saveRoleMenu(param);
+        return Result.success("分配成功");
     }
 }

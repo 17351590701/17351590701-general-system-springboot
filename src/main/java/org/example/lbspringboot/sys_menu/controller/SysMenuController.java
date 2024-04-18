@@ -3,6 +3,8 @@ package org.example.lbspringboot.sys_menu.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeParam;
+import org.example.lbspringboot.sys_menu.entity.AssignTreeVo;
 import org.example.lbspringboot.sys_menu.entity.MakeMenuTree;
 import org.example.lbspringboot.sys_menu.entity.SysMenu;
 import org.example.lbspringboot.sys_menu.service.SysMenuService;
@@ -48,9 +50,9 @@ public class SysMenuController {
     // 删除
     @DeleteMapping("/{menuId}")
     public Result delete(@PathVariable("menuId") Long menuId) {
-        //如果存在下级，就不能删除
+        // 如果存在下级，就不能删除
         QueryWrapper<SysMenu> query = new QueryWrapper<>();
-        //有父级Id等于此Id，说明有下级菜单
+        // 有父级Id等于此Id，说明有下级菜单
         query.lambda().eq(SysMenu::getParentId, menuId);
         if (sysMenuService.count(query) > 0) {
             return Result.error("存在下级菜单，不能删除");
@@ -80,4 +82,5 @@ public class SysMenuController {
         List<SysMenu> list = sysMenuService.getParent();
         return Result.success("查询成功", list);
     }
+
 }
