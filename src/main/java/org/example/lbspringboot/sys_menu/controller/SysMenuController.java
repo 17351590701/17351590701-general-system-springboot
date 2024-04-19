@@ -1,17 +1,22 @@
 package org.example.lbspringboot.sys_menu.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.example.lbspringboot.sys_menu.entity.MakeMenuTree;
+import org.example.lbspringboot.sys_menu.entity.RouterVo;
 import org.example.lbspringboot.sys_menu.entity.SysMenu;
 import org.example.lbspringboot.sys_menu.service.SysMenuService;
-import org.example.lbspringboot.utils.JwtUtils;
+import org.example.lbspringboot.sys_user.entity.SysUser;
+import org.example.lbspringboot.sys_user.service.SysUserService;
 import org.example.lbspringboot.utils.Result;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author zyr
@@ -25,6 +30,8 @@ import java.util.List;
 public class SysMenuController {
     @Resource
     private SysMenuService sysMenuService;
+    @Resource
+    private SysUserService sysUserService;
 
     // 新增
     @PostMapping
@@ -62,7 +69,7 @@ public class SysMenuController {
         return Result.error("删除失败");
     }
 
-    // 列表
+    // 获取菜单列表
     @GetMapping("/getList")
     public Result getList() {
         // 按序号升序
@@ -80,6 +87,29 @@ public class SysMenuController {
     public Result getParent() {
         List<SysMenu> list = sysMenuService.getParent();
         return Result.success("查询成功", list);
+    }
+
+    //获取动态路由菜单
+    @GetMapping("/getMenuList")
+    public Result getRouterMenuList(Long userId){
+        //获取用户信息
+        SysUser user = sysUserService.getById(userId);
+        List<SysMenu> menuList =null;
+        //判断是否是超级管理员
+        if(StringUtils.isNotEmpty(user.getIsAdmin())&&"1".equals(user.getIsAdmin())){
+            menuList = sysMenuService.list();
+        }else{
+            menuList = sysMenuService.getMenuByUserId(user.getUserId());
+        }
+        //过滤菜单数据，去除按钮
+        List<SysMenu> list = Optional.ofNullable(menuList).orElse(new ArrayList<>())
+                .stream()
+                .filter(item -> StringUtils.isNotEmpty(item.getType()) && !"2".equals(item.getType()))
+                .toList();
+
+        //组装路由数据
+        List<RouterVo> routerVos = MakeMenuTree.makeRouter(list, 0L);
+        return Result.success("查询成功",routerVos);
     }
 
 }

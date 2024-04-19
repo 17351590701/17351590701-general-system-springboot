@@ -16,6 +16,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.example.lbspringboot.sys_menu.entity.AssignTreeParam;
 import org.example.lbspringboot.sys_menu.entity.AssignTreeVo;
+import org.example.lbspringboot.sys_menu.entity.SysMenu;
+import org.example.lbspringboot.sys_menu.service.SysMenuService;
 import org.example.lbspringboot.sys_user.entity.*;
 import org.example.lbspringboot.sys_user.service.SysUserService;
 import org.example.lbspringboot.sys_user_role.entity.SysUserRole;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author zyr
@@ -48,7 +51,10 @@ public class SysUserController {
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
     @Resource
+    private SysMenuService sysMenuService;
+    @Resource
     private JwtUtils jwtUtils;
+
     // 新增
     @PostMapping
     public Result add(@RequestBody SysUser sysUser) {
@@ -185,9 +191,9 @@ public class SysUserController {
             LoginVo vo = new LoginVo();
             vo.setUserId(one.getUserId());
             vo.setNickName(one.getNickName());
-            //生成token
-            Map<String,String> map= new HashMap<>();
-            map.put("userId",Long.toString(one.getUserId()));
+            // 生成token
+            Map<String, String> map = new HashMap<>();
+            map.put("userId", Long.toString(one.getUserId()));
             String token = jwtUtils.generateToken(map);
             vo.setToken(token);
             return Result.success("登录成功", vo);
@@ -219,6 +225,30 @@ public class SysUserController {
         } else {
             return Result.error("修改失败");
         }
+
+    }
+
+    // 获取用户信息
+    @GetMapping("/getInfo")
+    public Result getInfo(Long userId) {
+        // 根据id查询用户信息
+        SysUser user = sysUserService.getById(userId);
+        List<SysMenu> menuList = null;
+        // 判断是否为超级管理员
+        if (StringUtils.isNotEmpty(user.getIsAdmin()) && "1".equals((user.getIsAdmin()))) {
+            // 是就全部查询
+            menuList = sysMenuService.list();
+        } else {
+            menuList = sysMenuService.getMenuByUserId(user.getUserId());
+        }
+        List<String> list = Optional.ofNullable(menuList).orElse(new ArrayList<>())
+                .stream()
+                .map(SysMenu::getCode)// item->item.getCode()
+                .filter(StringUtils::isNotEmpty)// item->StringUtils.isNodeEmpty(item)
+                .toList();
+        // 设置
+        UserInfo userInfo = new UserInfo(user.getUserId(), user.getNickName(), list.toArray());
+        return Result.success("查询成功", userInfo);
 
     }
 }
