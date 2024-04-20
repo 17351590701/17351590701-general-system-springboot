@@ -2,7 +2,9 @@ package org.example.lbspringboot.sys_user.controller;
 
 
 import cn.hutool.captcha.CaptchaUtil;
+import cn.hutool.captcha.LineCaptcha;
 import cn.hutool.captcha.ShearCaptcha;
+import cn.hutool.captcha.generator.RandomGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -155,8 +157,11 @@ public class SysUserController {
         response.setHeader("Pragma", "No-cache");
 
         // 创建一个图形验证码，指定其长度、宽度、字符数和干扰线宽度
-        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(300, 100, 4, 4);
-        String capText = captcha.getCode();
+        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(300, 150, 4, 4);
+        RandomGenerator randomGenerator = new RandomGenerator("0123456789", 4);
+        captcha.setGenerator(randomGenerator);
+
+        String capText=captcha.getCode();
 
         // redis设置 60s key 过期
         redisTemplate.opsForValue().set("capText", capText, 60, TimeUnit.SECONDS);
