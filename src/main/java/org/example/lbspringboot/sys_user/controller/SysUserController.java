@@ -149,7 +149,7 @@ public class SysUserController {
      * @throws IOException 如果在输出过程中发生IO异常。
      */
     @GetMapping("/getImage")
-    public Result imageCodeBase64(HttpServletResponse response) throws IOException {
+    public void imageCodeBase64(HttpServletResponse response) throws IOException {
         // 设置响应类型为图片格式，将验证码图片输出到浏览器
         response.setContentType("image/jpeg");
         response.setHeader("Pragma", "No-cache");
@@ -164,8 +164,6 @@ public class SysUserController {
 
         captcha.write(response.getOutputStream());
         response.getOutputStream().close();
-        // 返回成功结果，表示验证码已生成
-        return Result.success("验证码生成成功");
     }
 
 
@@ -241,11 +239,14 @@ public class SysUserController {
         } else {
             menuList = sysMenuService.getMenuByUserId(user.getUserId());
         }
-        List<String> list = Optional.ofNullable(menuList).orElse(new ArrayList<>())
+
+        List<String> list = Optional.ofNullable(menuList)
+                .orElse(new ArrayList<>())
                 .stream()
-                .map(SysMenu::getCode)// item->item.getCode()
-                .filter(StringUtils::isNotEmpty)// item->StringUtils.isNodeEmpty(item)
+                .filter(item -> item != null && StringUtils.isNotEmpty(item.getCode()))
+                .map(SysMenu::getCode)
                 .toList();
+
         // 设置
         UserInfo userInfo = new UserInfo(user.getUserId(), user.getNickName(), list.toArray());
         return Result.success("查询成功", userInfo);

@@ -13,10 +13,7 @@ import org.example.lbspringboot.sys_user.service.SysUserService;
 import org.example.lbspringboot.utils.Result;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author zyr
@@ -102,9 +99,10 @@ public class SysMenuController {
             menuList = sysMenuService.getMenuByUserId(user.getUserId());
         }
         //过滤菜单数据，去除按钮
-        List<SysMenu> list = Optional.ofNullable(menuList).orElse(new ArrayList<>())
+        List<SysMenu> list = Optional.ofNullable(menuList)
+                .orElse(Collections.emptyList())
                 .stream()
-                .filter(item -> StringUtils.isNotEmpty(item.getType()) && !"2".equals(item.getType()))
+                .filter(item -> item!=null&& !"2".equals(item.getType()))
                 .toList();
 
         //组装路由数据

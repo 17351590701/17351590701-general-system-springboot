@@ -12,10 +12,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Result<T> {
+public class Result {
     private int code;  /*判定成功失败*/
     private String msg;/*消息返回报错信息，前台获取*/
-    private T data;    /*接收任何数据*/
+    private Object data;    /*接收任何数据*/
 
     //成功返回 code
     public static Result success() {
