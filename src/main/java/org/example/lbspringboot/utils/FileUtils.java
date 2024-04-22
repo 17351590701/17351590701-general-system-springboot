@@ -35,6 +35,7 @@ public class FileUtils {
      */
     @PostMapping("/upload")
     public Result upload(MultipartFile file) throws IOException {
+        synchronized (FileUtils.class){
         // 检查并创建文件存储目录，如果不存在
         if (!FileUtil.isDirectory(rootFilePath)) {
             FileUtil.mkdir(rootFilePath);
@@ -48,6 +49,7 @@ public class FileUtils {
 
         // 返回UUID前缀，供后续下载文件时使用
         return Result.success(uuidPrefix);
+        }
     }
 
     /**
@@ -56,7 +58,7 @@ public class FileUtils {
      * @param flag 通过上传接口返回的UUID前缀，用于唯一标识待下载的文件
      * @param response HTTP响应对象，用于设置下载头信息及输出文件内容
      */
-    @GetMapping("/download/{flag}")
+    @GetMapping("/{flag}")
     public void downloadFile(@PathVariable String flag, HttpServletResponse response) {
 
         OutputStream os;

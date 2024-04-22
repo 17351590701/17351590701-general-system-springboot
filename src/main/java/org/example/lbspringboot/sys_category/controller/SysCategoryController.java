@@ -8,21 +8,24 @@ import jakarta.annotation.Resource;
 import org.example.lbspringboot.sys_category.entity.SysCategory;
 import org.example.lbspringboot.sys_category.entity.SysCategoryPage;
 import org.example.lbspringboot.sys_category.service.SysCategoryService;
+import org.example.lbspringboot.sys_role.entity.SelectItem;
 import org.example.lbspringboot.utils.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Date;
-
+import java.util.List;
+import java.util.Optional;
 
 /**
  * @author zyr
  * @date 2024/4/22 上午8:08
  * @Description 商品分类
  */
-@RestController
 @CrossOrigin
+@RestController
 @RequestMapping("/api/category")
 public class SysCategoryController {
     private static final Logger log = LoggerFactory.getLogger(SysCategoryController.class);
@@ -64,13 +67,28 @@ public class SysCategoryController {
         if(StringUtils.isNotEmpty(param.getRemark())){
             query.lambda().like(SysCategory::getRemark,param.getRemark());
         }
-        
+
         query.lambda().orderByDesc(SysCategory::getCreateTime);
         IPage<SysCategory> list = sysCategoryService.page(page, query);
         return Result.success("查询成功",list);
-
     }
 
-
+    //商品类型下拉数据
+    @GetMapping("/selectList")
+    public Result selectList(){
+        List<SysCategory> list = sysCategoryService.list();
+        //返回的值
+        List<SelectItem> selectItems = new ArrayList<>();
+        Optional.ofNullable(list).orElse((new ArrayList<>()))
+                .forEach(item->{
+                    SelectItem si = new SelectItem();
+                    si.setCheck(false);
+                    si.setLabel(item.getCategoryName());
+                    si.setValue(item.getCategoryId());
+                    selectItems.add(si);
+                });
+        return Result.success("查询成功",selectItems);
+    }
 
 }
+
