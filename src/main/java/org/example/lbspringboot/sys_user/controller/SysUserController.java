@@ -59,7 +59,6 @@ public class SysUserController {
     // 新增
     @PostMapping
     public Result add(@RequestBody SysUser sysUser) {
-        log.info("新增用户{}", sysUser);
         sysUser.setCreateTime(new Date());
         sysUserService.saveUser(sysUser);
         return Result.success("新增成功");

@@ -1,6 +1,7 @@
 package org.example.lbspringboot.sys_good.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -21,6 +22,9 @@ public class SysGood {
     private String Description;
     private String price;
     private String pictureKey;
+    //不属于用户表，需要排除
+    @TableField(exist = false)
+    private String categoryId;
     private Date createTime;
     private Date updateTime;
 

@@ -9,4 +9,11 @@ import org.example.lbspringboot.sys_good.entity.SysGood;
  * @Description
  */
 public interface SysGoodService extends IService<SysGood> {
+    //新增
+    void saveGood(SysGood sysGood);
+    //编辑
+    void editGood(SysGood sysGood);
+    //删除
+    void deleteGood(Long goodId);
+
 }

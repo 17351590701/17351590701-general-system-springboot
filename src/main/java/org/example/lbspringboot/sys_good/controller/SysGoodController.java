@@ -31,21 +31,21 @@ public class SysGoodController {
     @PostMapping
     public Result addGood(@RequestBody SysGood sysGood){
         sysGood.setCreateTime(new Date());
-        sysGoodService.save(sysGood);
+        sysGoodService.saveGood(sysGood);
         return Result.success("新增成功");
 }
 
     //删除
     @DeleteMapping("/{goodId}")
     public Result deleteGood(@PathVariable Long goodId){
-        sysGoodService.removeById(goodId);
+        sysGoodService.deleteGood(goodId);
         return Result.success("删除成功");
     }
     //修改
     @PutMapping
     public Result updateGood(@RequestBody SysGood sysGood){
         sysGood.setUpdateTime(new Date());
-        sysGoodService.updateById(sysGood);
+        sysGoodService.editGood(sysGood);
         return Result.success("修改成功");
     }
     //查询
@@ -62,5 +62,6 @@ public class SysGoodController {
         IPage<SysGood> list = sysGoodService.page(page, query);
         return Result.success("查询成功",list);
     }
+
 
 }
