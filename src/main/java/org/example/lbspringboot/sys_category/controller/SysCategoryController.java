@@ -7,13 +7,14 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
 import org.example.lbspringboot.sys_category.entity.SysCategory;
 import org.example.lbspringboot.sys_category.entity.SysCategoryPage;
-import org.example.lbspringboot.sys_category.service.Impl.SysSysCategoryService;
 import org.example.lbspringboot.sys_category.service.SysCategoryService;
 import org.example.lbspringboot.utils.Result;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Date;
+
 
 /**
  * @author zyr
@@ -21,16 +22,17 @@ import java.util.List;
  * @Description 商品分类
  */
 @RestController
-@RequestMapping("/sys/category")
+@CrossOrigin
+@RequestMapping("/api/category")
 public class SysCategoryController {
+    private static final Logger log = LoggerFactory.getLogger(SysCategoryController.class);
     @Resource
     private SysCategoryService sysCategoryService;
-    @Autowired
-    private SysSysCategoryService sysSysCategoryService;
 
     //新增
     @PostMapping
     public Result add(@RequestBody SysCategory sysCategory){
+        sysCategory.setCreateTime(new Date());
         sysCategoryService.save(sysCategory);
         return Result.success("新增成功");
     }
@@ -38,17 +40,19 @@ public class SysCategoryController {
     //删除
     @DeleteMapping("/{categoryId}")
     public Result delete(@PathVariable Long categoryId){
-        sysSysCategoryService.removeById(categoryId);
+        sysCategoryService.removeById(categoryId);
         return Result.success("删除成功");
     }
     //修改
     @PutMapping
     public Result edit(@RequestBody SysCategory sysCategory){
+        log.info("修改参数：{}",sysCategory);
+        sysCategory.setUpdateTime(new Date());
         sysCategoryService.updateById(sysCategory);
         return Result.success("修改成功");
     }
     //查询与获取商品列表
-    @GetMapping
+    @GetMapping("/getList")
     public Result getList(SysCategoryPage param){
         //构造分页对象
         IPage<SysCategory> page = new Page<>(param.getCurrentPage(),param.getPageSize());
@@ -56,7 +60,11 @@ public class SysCategoryController {
         //如果查询中商品名不为空
         if(StringUtils.isNotEmpty(param.getCategoryName())){
             query.lambda().like(SysCategory::getCategoryName,param.getCategoryName());
+        } //如果查询中类型描述不为空
+        if(StringUtils.isNotEmpty(param.getRemark())){
+            query.lambda().like(SysCategory::getRemark,param.getRemark());
         }
+        
         query.lambda().orderByDesc(SysCategory::getCreateTime);
         IPage<SysCategory> list = sysCategoryService.page(page, query);
         return Result.success("查询成功",list);

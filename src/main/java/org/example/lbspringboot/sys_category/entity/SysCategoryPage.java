@@ -9,8 +9,8 @@ import lombok.Data;
  */
 @Data
 public class SysCategoryPage {
-    private Long categoryId;
     private String categoryName;
+    private String remark;
     private Long currentPage;
     private Long pageSize;
 }
