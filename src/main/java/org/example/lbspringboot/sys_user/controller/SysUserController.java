@@ -2,7 +2,6 @@ package org.example.lbspringboot.sys_user.controller;
 
 
 import cn.hutool.captcha.CaptchaUtil;
-import cn.hutool.captcha.LineCaptcha;
 import cn.hutool.captcha.ShearCaptcha;
 import cn.hutool.captcha.generator.RandomGenerator;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -152,12 +151,13 @@ public class SysUserController {
      */
     @GetMapping("/getImage")
     public void imageCodeBase64(HttpServletResponse response) throws IOException {
+        log.info("获取了验证码");
         // 设置响应类型为图片格式，将验证码图片输出到浏览器
         response.setContentType("image/jpeg");
         response.setHeader("Pragma", "No-cache");
 
         // 创建一个图形验证码，指定其长度、宽度、字符数和干扰线宽度
-        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(300, 150, 4, 4);
+        ShearCaptcha captcha = CaptchaUtil.createShearCaptcha(250, 150, 4, 4);
         RandomGenerator randomGenerator = new RandomGenerator("0123456789", 4);
         captcha.setGenerator(randomGenerator);
 
