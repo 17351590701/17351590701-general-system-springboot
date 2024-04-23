@@ -6,13 +6,18 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.example.lbspringboot.sys_category_good.entity.SysCategoryGood;
+import org.example.lbspringboot.sys_category_good.service.SysCategoryGoodService;
 import org.example.lbspringboot.sys_good.entity.SysGood;
 import org.example.lbspringboot.sys_good.entity.SysGoodPage;
 import org.example.lbspringboot.sys_good.service.SysGoodService;
 import org.example.lbspringboot.utils.Result;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -27,6 +32,8 @@ import java.util.Date;
 public class SysGoodController {
     @Resource
     private SysGoodService sysGoodService;
+    @Resource
+    private SysCategoryGoodService sysCategoryGoodService;
     //新增
     @PostMapping
     public Result addGood(@RequestBody SysGood sysGood){
@@ -63,5 +70,21 @@ public class SysGoodController {
         return Result.success("查询成功",list);
     }
 
+    //根据商品id查新对应的商品类型
+    @GetMapping("/getCategoryList")
+    public Result getCategoryList(Long goodId){
+        QueryWrapper<SysCategoryGood> query= new QueryWrapper<>();
+        query.lambda().eq(SysCategoryGood::getGoodId,goodId);
+        //查询满足条件的category-good表至lisi中
+        List<SysCategoryGood> list = sysCategoryGoodService.list(query);
+        //categoryId集合
+        List<Long> categoryList = new ArrayList<>();
+        //判断查询是否为空
+        Optional.ofNullable(list).orElse(new ArrayList<>())
+                .forEach(item->{
+                    categoryList.add(item.getCategoryId());
+                });
+        return Result.success("查询成功",categoryList);
+    }
 
 }
