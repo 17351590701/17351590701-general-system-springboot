@@ -4,16 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
-import org.example.lbspringboot.sys_category.service.SysCategoryService;
 import org.example.lbspringboot.sys_category_good.entity.SysCategoryGood;
 import org.example.lbspringboot.sys_category_good.service.SysCategoryGoodService;
 import org.example.lbspringboot.sys_good.entity.GoodCondition;
 import org.example.lbspringboot.sys_good.entity.SysGood;
 import org.example.lbspringboot.sys_good.mapper.SysGoodMapper;
 import org.example.lbspringboot.sys_good.service.SysGoodService;
-import org.example.lbspringboot.sys_user_role.entity.SysUserRole;
-import org.example.lbspringboot.utils.Result;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +25,8 @@ import java.util.stream.Collectors;
 public class SysGoodServiceImpl extends ServiceImpl<SysGoodMapper, SysGood> implements SysGoodService {
     @Resource
     private SysCategoryGoodService sysCategoryGoodService;
+    @Resource
+    private SysGoodMapper sysGoodMapper;
 
     @Override
     @Transactional
@@ -93,6 +91,7 @@ public class SysGoodServiceImpl extends ServiceImpl<SysGoodMapper, SysGood> impl
     @Override
     public List<SysGood> getConditionGoodId(GoodCondition goodCondition) {
         //set去重查询 关系表 id goodId categoryId
+        //查询所有goodId
         Set<Long> set = this.baseMapper.selectList(null).stream()
                 .map(SysGood::getGoodId)
                 .collect(Collectors.toSet());
@@ -134,8 +133,13 @@ public class SysGoodServiceImpl extends ServiceImpl<SysGoodMapper, SysGood> impl
                 set.retainAll(set3);
             }
         }
+        List<SysGood> goodList = new ArrayList<>();
         //获取set中存储goodId对应的商品信息
-        return this.baseMapper.selectBatchIds(set);
+        set.forEach(item->{
+            SysGood sysGood = sysGoodMapper.selectById(item);
+            goodList.add(sysGood);
+        });
+        return goodList;
     }
 
 }

@@ -26,7 +26,7 @@ import java.util.Optional;
  */
 @CrossOrigin
 @RestController
-@RequestMapping("/api/category")
+@RequestMapping("/category")
 public class SysCategoryController {
     private static final Logger log = LoggerFactory.getLogger(SysCategoryController.class);
     @Resource

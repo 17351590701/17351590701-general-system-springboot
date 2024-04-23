@@ -23,7 +23,7 @@ import java.util.*;
 @Slf4j
 @CrossOrigin
 @RestController
-@RequestMapping("/api/sysMenu")
+@RequestMapping("/sysMenu")
 public class SysMenuController {
     @Resource
     private SysMenuService sysMenuService;

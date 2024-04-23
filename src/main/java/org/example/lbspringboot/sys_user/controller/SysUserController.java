@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @CrossOrigin
 @RestController
-@RequestMapping("/api/sysUser")
+@RequestMapping("/sysUser")
 public class SysUserController {
     @Resource
     private SysUserService sysUserService;
@@ -167,7 +167,7 @@ public class SysUserController {
         log.info("验证码：{}", capText);
 
         captcha.write(response.getOutputStream());
-        response.getOutputStream().close();
+        // response.getOutputStream().close();
     }
 
 

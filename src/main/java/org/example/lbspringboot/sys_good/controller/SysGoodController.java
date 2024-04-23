@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 @Slf4j
 @CrossOrigin
 @RestController
-@RequestMapping("/api/good")
+@RequestMapping("/good")
 public class SysGoodController {
     @Resource
     private SysGoodService sysGoodService;

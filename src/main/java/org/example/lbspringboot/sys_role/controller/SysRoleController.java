@@ -28,7 +28,7 @@ import java.util.Optional;
 @Slf4j
 @CrossOrigin
 @RestController
-@RequestMapping("/api/role")
+@RequestMapping("/role")
 public class SysRoleController {
     @Resource
     private SysRoleService sysRoleService;
