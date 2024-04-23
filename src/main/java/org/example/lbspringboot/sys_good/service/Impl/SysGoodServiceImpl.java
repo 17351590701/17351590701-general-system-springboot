@@ -1,20 +1,24 @@
 package org.example.lbspringboot.sys_good.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.example.lbspringboot.sys_category.service.SysCategoryService;
 import org.example.lbspringboot.sys_category_good.entity.SysCategoryGood;
 import org.example.lbspringboot.sys_category_good.service.SysCategoryGoodService;
+import org.example.lbspringboot.sys_good.entity.GoodCondition;
 import org.example.lbspringboot.sys_good.entity.SysGood;
 import org.example.lbspringboot.sys_good.mapper.SysGoodMapper;
 import org.example.lbspringboot.sys_good.service.SysGoodService;
 import org.example.lbspringboot.sys_user_role.entity.SysUserRole;
+import org.example.lbspringboot.utils.Result;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author zyr
@@ -85,4 +89,53 @@ public class SysGoodServiceImpl extends ServiceImpl<SysGoodMapper, SysGood> impl
             sysCategoryGoodService.saveBatch(categorys);
         }
     }
+    //根据前端传递分类id，以及min，max查询对应goodId信息
+    @Override
+    public List<SysGood> getConditionGoodId(GoodCondition goodCondition) {
+        //set去重查询 关系表 id goodId categoryId
+        Set<Long> set = this.baseMapper.selectList(null).stream()
+                .map(SysGood::getGoodId)
+                .collect(Collectors.toSet());
+        //判断传递的分类id是否为空
+        if(StringUtils.isNotBlank(goodCondition.getCategoryIds())){
+            HashSet<Long> set1 = new HashSet<>();
+            String[] split = goodCondition.getCategoryIds().split(",");
+            List<String> categoryList = Arrays.asList(split);
+            // 使用HashSet来存储分类ID，以提高查找效率
+            Set<String> categorySet = new HashSet<>(categoryList);
+            // 使用增强for循环遍历商品，使用HashSet查找分类ID是否包含
+            sysCategoryGoodService.list().forEach(item -> {
+                if (categorySet.contains(item.getCategoryId().toString())) {
+                    set1.add(item.getGoodId());
+                }
+            });
+            if(!set1.isEmpty()){
+                //取交集
+                set.retainAll(set1);
+            }
+        }
+        if(StringUtils.isNotBlank(goodCondition.getPriceMin())){
+            QueryWrapper<SysGood> query = new QueryWrapper<>();
+            query.lambda().ge(SysGood::getPrice,goodCondition.getPriceMin());
+            //所有大于min元素
+            Set<Long> set2 = this.baseMapper.selectList(query).stream().map(SysGood::getGoodId).collect(Collectors.toSet());
+            if(!set2.isEmpty()){
+                //取交集
+                set.retainAll(set2);
+            }
+        }
+        if(StringUtils.isNotBlank(goodCondition.getPriceMax())){
+            QueryWrapper<SysGood> query = new QueryWrapper<>();
+            query.lambda().le(SysGood::getPrice,goodCondition.getPriceMax());
+            //所有小于max元素
+            Set<Long> set3 = this.baseMapper.selectList(query).stream().map(SysGood::getGoodId).collect(Collectors.toSet());
+            if(!set3.isEmpty()){
+                //取交集
+                set.retainAll(set3);
+            }
+        }
+        //获取set中存储goodId对应的商品信息
+        return this.baseMapper.selectBatchIds(set);
+    }
+
 }
