@@ -20,7 +20,7 @@ import java.util.List;
 @Slf4j
 @CrossOrigin
 @RestController
-@RequestMapping("/api/files")
+@RequestMapping("/files")
 public class FileUtils {
 
     // 存储文件的根路径

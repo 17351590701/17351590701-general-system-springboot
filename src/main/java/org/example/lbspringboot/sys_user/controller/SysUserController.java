@@ -15,12 +15,15 @@ import jakarta.annotation.Resource;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.example.lbspringboot.sys_good.entity.SysGood;
 import org.example.lbspringboot.sys_menu.entity.AssignTreeParam;
 import org.example.lbspringboot.sys_menu.entity.AssignTreeVo;
 import org.example.lbspringboot.sys_menu.entity.SysMenu;
 import org.example.lbspringboot.sys_menu.service.SysMenuService;
 import org.example.lbspringboot.sys_user.entity.*;
 import org.example.lbspringboot.sys_user.service.SysUserService;
+import org.example.lbspringboot.sys_user_good.entity.SysUserGood;
+import org.example.lbspringboot.sys_user_good.service.SysUserGoodService;
 import org.example.lbspringboot.sys_user_role.entity.SysUserRole;
 import org.example.lbspringboot.sys_user_role.service.SysUserRoleService;
 import org.example.lbspringboot.utils.JwtUtils;
@@ -55,6 +58,8 @@ public class SysUserController {
     private SysMenuService sysMenuService;
     @Resource
     private JwtUtils jwtUtils;
+    @Resource
+    private SysUserGoodService sysUserGoodService;
 
     // 新增
     @PostMapping
@@ -160,7 +165,7 @@ public class SysUserController {
         RandomGenerator randomGenerator = new RandomGenerator("0123456789", 4);
         captcha.setGenerator(randomGenerator);
 
-        String capText=captcha.getCode();
+        String capText = captcha.getCode();
 
         // redis设置 60s key 过期
         redisTemplate.opsForValue().set("capText", capText, 60, TimeUnit.SECONDS);
@@ -255,5 +260,34 @@ public class SysUserController {
         UserInfo userInfo = new UserInfo(user.getUserId(), user.getNickName(), list.toArray());
         return Result.success("查询成功", userInfo);
 
+    }
+
+    // 用户购物存入用户商品关系表
+    @PostMapping("/shopCart")
+    public Result shopCart(@RequestBody SysUserGood param) {
+        sysUserGoodService.save(param);
+        return Result.success("购物成功");
+    }
+
+    //查询所有购物车信息
+    @GetMapping("getShopList")
+    public Result getShopList(ShopParam param) {
+        IPage<SysGood> sysGoods = sysUserGoodService.userGoodList(param);
+        return Result.success("查询成功", sysGoods);
+    }
+
+    //取消所选购物订单
+    @PostMapping("/cancel")
+    public Result Cancel(@RequestBody CancelParam param){
+        QueryWrapper<SysUserGood> query = new QueryWrapper<>();
+        query.lambda().eq(SysUserGood::getUserId,param.getUserId());
+        //查询该userId下的信息表
+        sysUserGoodService.list(query)
+                .forEach(item->{
+                    if(item.getGoodId().equals(param.getGoodId())){
+                    sysUserGoodService.removeById(item.getId());
+                    }
+                });
+        return Result.success("取消成功");
     }
 }

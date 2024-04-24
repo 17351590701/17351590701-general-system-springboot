@@ -32,7 +32,6 @@ jwt:
   issuer: zyr
   secret: zyr030426
   expiration: 30
-
 ---
 server:
   port: 81
