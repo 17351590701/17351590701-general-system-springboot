@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="org.example.lbspringboot.sys_category_good.mapper.SysCategoryGoodMapper">
+<mapper namespace="org.example.shopping.sys_category_good.mapper.SysCategoryGoodMapper">
     <insert id="saveCategoryGood">
         insert into sys_category_good(good_id,category_id)values
         <foreach collection="categoryIds" separator="," item="item" index="index">
