@@ -5,19 +5,19 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
+import org.example.lbspringboot.sys_category.entity.EChartModel;
 import org.example.lbspringboot.sys_category.entity.SysCategory;
 import org.example.lbspringboot.sys_category.entity.SysCategoryPage;
 import org.example.lbspringboot.sys_category.service.SysCategoryService;
+import org.example.lbspringboot.sys_category_good.service.SysCategoryGoodService;
+import org.example.lbspringboot.sys_good.service.SysGoodService;
 import org.example.lbspringboot.sys_role.entity.SelectItem;
 import org.example.lbspringboot.utils.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author zyr
@@ -31,6 +31,10 @@ public class SysCategoryController {
     private static final Logger log = LoggerFactory.getLogger(SysCategoryController.class);
     @Resource
     private SysCategoryService sysCategoryService;
+    @Resource
+    private SysCategoryGoodService sysCategoryGoodService;
+    @Resource
+    private SysGoodService sysGoodService;
 
     //新增
     @PostMapping
@@ -88,6 +92,16 @@ public class SysCategoryController {
                     selectItems.add(si);
                 });
         return Result.success("查询成功",selectItems);
+    }
+
+    //获取echarts数据
+    @GetMapping("/getEcharts")
+    public Result getEcharts(){
+        HashMap<String, Long> hm = sysCategoryGoodService.getValueCategory();
+        //获取商品总数
+        long count = sysCategoryService.list().size();
+        EChartModel eChartModel = new EChartModel(count,hm);
+        return Result.success("查询成功",eChartModel);
     }
 
 }
