@@ -163,4 +163,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         vo.setMenuList(makeTree);
         return vo;
     }
+
+    //重写UserDetailsService中的loadUserByUsername调用
+    @Override
+    public SysUser loadUser(String username) {
+        //根据用户名查询
+        QueryWrapper<SysUser> query = new QueryWrapper<>();
+        query.eq("username", username);
+        return this.baseMapper.selectOne(query);
+    }
 }

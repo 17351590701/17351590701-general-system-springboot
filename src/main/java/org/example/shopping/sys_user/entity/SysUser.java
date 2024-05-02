@@ -5,7 +5,12 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.Collection;
 import java.util.Date;
 
 /**
@@ -15,7 +20,9 @@ import java.util.Date;
  */
 @Data
 @TableName("sys_user")
-public class SysUser {
+public class SysUser implements UserDetails {
+    @Serial
+    private static final long serialVersionUID = 9215887261717144118L;
     @TableId(type = IdType.AUTO)
     private Long userId;
     private String username;
@@ -38,4 +45,8 @@ public class SysUser {
     private String nickName;
     private Date createTime;
     private Date updateTime;
+
+    //权限字段集合
+    @TableField(exist = false)
+    Collection<? extends GrantedAuthority> authorities;
 }

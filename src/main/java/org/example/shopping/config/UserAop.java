@@ -91,7 +91,7 @@ public class UserAop {
         }
         return res;
     }
-    //记录用户商品交易至数据库
+    //记录用户商品交易至数据库1
     public void logInfo(String info){
         boolean save = sysLogService.save(new SysLog(info,new Date()));
     }

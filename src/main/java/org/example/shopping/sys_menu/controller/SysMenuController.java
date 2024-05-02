@@ -11,6 +11,7 @@ import org.example.shopping.sys_menu.service.SysMenuService;
 import org.example.shopping.sys_user.entity.SysUser;
 import org.example.shopping.sys_user.service.SysUserService;
 import org.example.shopping.utils.Result;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -32,6 +33,7 @@ public class SysMenuController {
 
     // 新增
     @PostMapping
+    @PreAuthorize("hasAuthority('sys:menu:add')")
     public Result add(@RequestBody SysMenu sysMenu) {
         sysMenu.setCreateTime(new Date());
         if (sysMenuService.save(sysMenu)) {
@@ -42,6 +44,7 @@ public class SysMenuController {
 
     // 编辑
     @PutMapping
+    @PreAuthorize("hasAuthority('sys:menu:edit')")
     public Result edit(@RequestBody SysMenu sysMenu) {
         sysMenu.setUpdateTime(new Date());
         if (sysMenuService.updateById(sysMenu)) {
@@ -52,6 +55,7 @@ public class SysMenuController {
 
     // 删除
     @DeleteMapping("/{menuId}")
+    @PreAuthorize("hasAuthority('sys:menu:delete')")
     public Result delete(@PathVariable("menuId") Long menuId) {
         // 如果存在下级，就不能删除
         QueryWrapper<SysMenu> query = new QueryWrapper<>();
@@ -88,13 +92,15 @@ public class SysMenuController {
 
     //获取动态路由菜单
     @GetMapping("/getMenuList")
-    public Result getRouterMenuList(Long userId){
+    public Result getMenuList(Long userId){
         //获取用户信息
         SysUser user = sysUserService.getById(userId);
         List<SysMenu> menuList =null;
         //判断是否是超级管理员
         if(StringUtils.isNotEmpty(user.getIsAdmin())&&"1".equals(user.getIsAdmin())){
-            menuList = sysMenuService.list();
+            QueryWrapper<SysMenu> query = new QueryWrapper<>();
+            query.lambda().orderByAsc(SysMenu::getOrderNum);
+            menuList = sysMenuService.list(query);
         }else{
             menuList = sysMenuService.getMenuByUserId(user.getUserId());
         }

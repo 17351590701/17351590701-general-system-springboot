@@ -29,7 +29,7 @@ public class JwtUtils {
     private String issuer;
     //密钥
     private String secret;
-    //过期时间
+    //过期时间，定义为86400s
     private Integer expiration;
 
     /**

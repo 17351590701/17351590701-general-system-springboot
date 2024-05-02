@@ -19,4 +19,6 @@ public interface SysUserService extends IService<SysUser> {
     void deleteUser(Long userId);
     //查询菜单树
     AssignTreeVo getAssignTree(AssignTreeParam param);
+    //根据用户名查询
+    SysUser loadUser(String username);
 }

@@ -13,6 +13,7 @@ import org.example.shopping.sys_role.service.SysRoleService;
 import org.example.shopping.sys_role_menu.entity.SaveMenuParam;
 import org.example.shopping.sys_role_menu.service.Impl.SysRoleMenuServiceImpl;
 import org.example.shopping.utils.Result;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class SysRoleController {
 
     // 新增
     @PostMapping
+    @PreAuthorize("hasAuthority('sys:role:add')")
     public Result add(@RequestBody SysRole sysRole) {
         // 手动添加创建时间
         sysRole.setCreateTime(new Date());
@@ -49,6 +51,7 @@ public class SysRoleController {
 
     // 编辑
     @PutMapping
+    @PreAuthorize("hasAuthority('sys:role:edit')")
     public Result edit(@RequestBody SysRole sysRole) {
         sysRole.setUpdateTime(new Date());
         if (sysRoleService.updateById(sysRole)) {
@@ -59,6 +62,7 @@ public class SysRoleController {
 
     // 删除角色
     @DeleteMapping("/{roleId}")
+    @PreAuthorize("hasAuthority('sys:role:delete')")
     public Result delete(@PathVariable("roleId") Long roleId) {
         // 通过角色ID删除角色，如果删除成功则返回成功消息，否则返回失败消息
         if (sysRoleService.removeById(roleId)) {
@@ -106,6 +110,7 @@ public class SysRoleController {
     }
 
     //保存角色菜单
+    @PreAuthorize("hasAuthority('sys:role:assign')")
     @PostMapping("/saveRoleMenu")
     public Result saveRoleMenu(@RequestBody SaveMenuParam param){
         sysRoleMenuService.saveRoleMenu(param);

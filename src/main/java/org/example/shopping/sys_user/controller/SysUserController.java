@@ -13,6 +13,7 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.annotation.Resource;
 
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.example.shopping.sys_good.entity.SysGood;
@@ -29,6 +30,13 @@ import org.example.shopping.sys_user_role.service.SysUserRoleService;
 import org.example.shopping.utils.JwtUtils;
 import org.example.shopping.utils.Result;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -59,16 +67,22 @@ public class SysUserController {
     private JwtUtils jwtUtils;
     @Resource
     private SysUserGoodService sysUserGoodService;
-
+    @Resource
+    private AuthenticationManager authenticationManager;
+    @Resource
+    private PasswordEncoder passwordEncoder;
     // 新增
     @PostMapping
+    @PreAuthorize("hasAuthority('sys:user:add')")
     public Result add(@RequestBody SysUser sysUser) {
         sysUser.setCreateTime(new Date());
+        sysUser.setPassword(passwordEncoder.encode(sysUser.getPassword()));
         sysUserService.saveUser(sysUser);
         return Result.success("新增成功");
     }
 
     // 编辑
+    @PreAuthorize("hasAuthority('sys:user:edit')")
     @PutMapping
     public Result edit(@RequestBody SysUser sysUser) {
         sysUser.setUpdateTime(new Date());
@@ -77,15 +91,55 @@ public class SysUserController {
 
     }
 
-
     // 删除
+    @PreAuthorize("hasAuthority('sys:user:delete')")
     @DeleteMapping("/{userId}")
     public Result delete(@PathVariable("userId") Long userId) {
         sysUserService.deleteUser(userId);
         return Result.success("删除成功");
     }
 
+    // 重置密码
+    @PreAuthorize("hasAuthority('sys:user:reset')")
+    @PostMapping("/resetPassword")
+    public Result resetPassword(@RequestBody SysUser sysUser) {
+        log.info("重置密码{}", sysUser);
+        UpdateWrapper<SysUser> query = new UpdateWrapper<>();
+        // 重置密码：666666
+        query.lambda().eq(SysUser::getUserId, sysUser.getUserId())
+                .set(SysUser::getPassword, passwordEncoder.encode("666666"));
+        if (sysUserService.update(query)) {
+            return Result.success("密码重置成功");
+        }
+        return Result.error("密码重置失败");
+    }
 
+    // 修改密码
+    @PutMapping("/updatePassword")
+    public Result updatePassword(@RequestBody UpdatePasswordParam param) {
+        SysUser user = sysUserService.getById(param.getUserId());
+        if (!passwordEncoder.matches(param.getOldPassword(),user.getPassword())) {
+            return Result.error("原密码错误");
+        }
+        UpdateWrapper<SysUser> query = new UpdateWrapper<>();
+        query.lambda().set(SysUser::getPassword, passwordEncoder.encode(param.getNewPassword()))
+                .eq(SysUser::getUserId, param.getUserId());
+        if (sysUserService.update(query)) {
+            return Result.success("修改成功");
+        } else {
+            return Result.error("修改失败");
+        }
+    }
+
+    //退出登录
+    @PostMapping("/loginOUt")
+    public Result loginOut(HttpServletRequest request,HttpServletResponse response){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication!=null){
+            new SecurityContextLogoutHandler().logout(request,response,authentication);
+        }
+        return Result.success("退出成功");
+    }
     /**
      * 获取角色列表
      *
@@ -130,20 +184,6 @@ public class SysUserController {
         return Result.success("查询成功", roleList);
     }
 
-    // 重置密码
-    @PostMapping("/resetPassword")
-    public Result resetPassword(@RequestBody SysUser sysUser) {
-        log.info("重置密码{}", sysUser);
-        UpdateWrapper<SysUser> query = new UpdateWrapper<>();
-        // 重置密码：666666
-        query.lambda().eq(SysUser::getUserId, sysUser.getUserId())
-                .set(SysUser::getPassword, "666666");
-        if (sysUserService.update(query)) {
-            return Result.success("密码重置成功");
-        }
-        return Result.error("密码重置失败");
-    }
-
 
     /**
      * 通过GET请求获取一个基于Base64编码的图形验证码。
@@ -154,7 +194,6 @@ public class SysUserController {
      */
     @GetMapping("/getImage")
     public void imageCodeBase64(HttpServletResponse response) throws IOException {
-        log.info("获取了验证码");
         // 设置响应类型为图片格式，将验证码图片输出到浏览器
         response.setContentType("image/jpeg");
         response.setHeader("Pragma", "No-cache");
@@ -175,35 +214,44 @@ public class SysUserController {
     }
 
 
-    // 登录
+    /**
+     * 用户登录接口
+     * @param param 包含登录所需信息的参数对象，如用户名、密码和验证码
+     * @return 返回登录结果，成功则包含用户信息和token，失败则返回错误信息
+     */
     @PostMapping("/login")
     public Result login(@RequestBody LoginParam param) {
-        // 获取前端输入的code
+        // 获取前端传来的验证码
         String Ucode = param.getCode();
-        // 获取redis中的key
+        // 从Redis中获取验证码的文本
         String capText = (String) redisTemplate.boundValueOps("capText").get();
         if (StringUtils.isEmpty(capText)) {
+            // 验证码不存在，已过期
             return Result.error("验证码过期");
         }
         if (capText.equalsIgnoreCase(Ucode)) {
-            // 查询用户信息
-            QueryWrapper<SysUser> query = new QueryWrapper<>();
-            query.lambda().eq(SysUser::getUsername, param.getUsername());
-            SysUser one = sysUserService.getOne(query);
-            if (one == null) {
-                return Result.error("用户不存在");
-            }
-            // 返回用户的信息和token
+            // 验证码正确，交给security开始认证过程
+            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(param.getUsername(), param.getPassword());
+            Authentication authenticate = authenticationManager.authenticate(authenticationToken);
+            // // 设置认证信息
+            SecurityContextHolder.getContext().setAuthentication(authenticate);
+            // 获取认证后的用户信息
+            SysUser user = (SysUser) authenticate.getPrincipal();
+
+            // SysUser user = sysUserService.loadUser(param.getUsername());
+            // 准备登录成功后的用户信息和token
             LoginVo vo = new LoginVo();
-            vo.setUserId(one.getUserId());
-            vo.setNickName(one.getNickName());
-            // 生成token
+            vo.setUserId(user.getUserId());
+            vo.setNickName(user.getNickName());
+            // 生成并设置token
             Map<String, String> map = new HashMap<>();
-            map.put("userId", Long.toString(one.getUserId()));
+            map.put("userId", Long.toString(user.getUserId()));
+            map.put("username", user.getUsername());
             String token = jwtUtils.generateToken(map);
             vo.setToken(token);
             return Result.success("登录成功", vo);
         } else {
+            // 验证码错误
             return Result.error("验证码错误");
         }
     }
@@ -216,23 +264,6 @@ public class SysUserController {
         return Result.success("查询成功", assignTree);
     }
 
-    // 修改密码
-    @PutMapping("/updatePassword")
-    public Result updatePassword(@RequestBody UpdatePasswordParam param) {
-        SysUser user = sysUserService.getById(param.getUserId());
-        if (!param.getOldPassword().equals(user.getPassword())) {
-            return Result.error("原密码错误");
-        }
-        UpdateWrapper<SysUser> query = new UpdateWrapper<>();
-        query.lambda().set(SysUser::getPassword, param.getNewPassword())
-                .eq(SysUser::getUserId, param.getUserId());
-        if (sysUserService.update(query)) {
-            return Result.success("修改成功");
-        } else {
-            return Result.error("修改失败");
-        }
-
-    }
 
     // 获取用户信息
     @GetMapping("/getInfo")
